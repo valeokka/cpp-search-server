@@ -60,10 +60,9 @@ public:
 
     void AddDocument(const int& document_id, const string& document) {
         const vector<string> words = SplitIntoWordsNoStop(document);
+        double word_cost = 1.0 / words.size();  
         for (string word : words) {
-            if (!word_to_document_freqs_[word][document_id]) {
-                double tf = 1.0 * count(words.begin(), words.end(), word) / words.size();
-                word_to_document_freqs_[word][document_id] = tf;
+                word_to_document_freqs_[word][document_id] += tf;
             }
 
         }
