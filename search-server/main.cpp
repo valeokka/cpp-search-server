@@ -60,27 +60,26 @@ public:
 
     void AddDocument(const int& document_id, const string& document) {
         const vector<string> words = SplitIntoWordsNoStop(document);
-        double word_cost = 1.0 / words.size();  
+        double tf = 1.0 / words.size();
         for (string word : words) {
-                word_to_document_freqs_[word][document_id] += tf;
-            }
-
+            word_to_document_freqs_[word][document_id] += tf;
         }
-        ++document_count_;
-    }
 
-    vector<Document> FindTopDocuments(const string& raw_query) const {
-        const Query query = ParseQuery(raw_query);
-        auto matched_documents = FindAllDocuments(query, word_to_document_freqs_);
-        sort(matched_documents.begin(), matched_documents.end(),
-            [](const Document& lhs, const Document& rhs) {
-                return lhs.relevance > rhs.relevance;
-            });
-        if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
-            matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
-        }
-        return matched_documents;
+    ++document_count_;
+}
+
+vector<Document> FindTopDocuments(const string& raw_query) const {
+    const Query query = ParseQuery(raw_query);
+    auto matched_documents = FindAllDocuments(query, word_to_document_freqs_);
+    sort(matched_documents.begin(), matched_documents.end(),
+        [](const Document& lhs, const Document& rhs) {
+            return lhs.relevance > rhs.relevance;
+        });
+    if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
+        matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
     }
+    return matched_documents;
+}
 
 private:
 
@@ -187,4 +186,3 @@ int main() {
             << "relevance = "s << relevance << " }"s << endl;
     }
 }
-
