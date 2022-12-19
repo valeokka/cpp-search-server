@@ -10,7 +10,7 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
-
+const double MAGICNUM = 1e-6;
 string ReadLine() {
     string s;
     getline(cin, s);
@@ -82,7 +82,7 @@ public:
 
         sort(matched_documents.begin(), matched_documents.end(),
             [](const Document& lhs, const Document& rhs) {
-                if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+                if (abs(lhs.relevance - rhs.relevance) < MAGICNUM) {
                     return lhs.rating > rhs.rating;
                 }
                 else {
@@ -393,8 +393,16 @@ void TestStatus() {
         SearchServer server;
         server.AddDocument(1, "dog in space", DocumentStatus::BANNED, { 2 });
         server.AddDocument(3, "dog in blue shirt", DocumentStatus::ACTUAL, { 2 });
-        auto docs = server.FindTopDocuments("dog", DocumentStatus::BANNED);
-        ASSERT(docs.size() == 1);
+        server.AddDocument(5, "dog in blue shirt1", DocumentStatus::ACTUAL, { 2 });
+        server.AddDocument(4, "dog in blue shirt2", DocumentStatus::ACTUAL, { 2 });
+        auto docs1 = server.FindTopDocuments("dog", DocumentStatus::BANNED);
+        ASSERT(docs1.size() == 1);
+        auto docs2 = server.FindTopDocuments("dog", DocumentStatus::ACTUAL);
+        ASSERT(docs2.size() == 3);
+        auto docs3 = server.FindTopDocuments("dog", DocumentStatus::IRRELEVANT);
+        ASSERT(docs3.size() == 0);
+        auto docs4 = server.FindTopDocuments("dog", DocumentStatus::REMOVED);
+        ASSERT(docs4.size() == 0);
     }
     //поиск если стандартный статус = актуальный
     {
@@ -403,14 +411,21 @@ void TestStatus() {
         server.AddDocument(3, "dog in blue shirt", DocumentStatus::ACTUAL, { 2 });
         auto docs = server.FindTopDocuments("dog");
         ASSERT(docs.size() == 1);
+
     }
     //нет подходящих слов
     {
         SearchServer server;
         server.AddDocument(1, "dog in space", DocumentStatus::BANNED, { 2 });
         server.AddDocument(3, "dog in blue shirt", DocumentStatus::ACTUAL, { 2 });
-        auto docs = server.FindTopDocuments("eeee", DocumentStatus::BANNED);
-        ASSERT(docs.size() == 0);
+        auto docs1 = server.FindTopDocuments("eeee", DocumentStatus::BANNED);
+        ASSERT(docs1.size() == 0);
+        auto docs2 = server.FindTopDocuments("eeee", DocumentStatus::ACTUAL);
+        ASSERT(docs2.size() == 0);
+        auto docs3 = server.FindTopDocuments("eeee", DocumentStatus::IRRELEVANT);
+        ASSERT(docs3.size() == 0);
+        auto docs4 = server.FindTopDocuments("eeee", DocumentStatus::REMOVED);
+        ASSERT(docs4.size() == 0);
     }
 }
 void TestRelevance() {
@@ -423,8 +438,9 @@ void TestRelevance() {
         search_server.AddDocument(3, "ухоженный скворец евгений"s, DocumentStatus::BANNED, { 9 });
         auto docs = search_server.FindTopDocuments("пушистый ухоженный кот"s);
         ASSERT(docs[0].rating == 5);
-        ASSERT(abs(docs[0].relevance - 0.866434) <= 1e-6);
+        ASSERT(abs(docs[0].relevance - 0.866434) <= MAGICNUM);
     }
+    
 }
 void TestSort() {
     {
@@ -439,8 +455,77 @@ void TestSort() {
         ASSERT(docs[1].id == 0);
         ASSERT(docs[2].id == 2);
     }
+    {
+        SearchServer search_server;
+        search_server.SetStopWords("и в на"s);
+        search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, { 8, -3 });
+        search_server.AddDocument(1, "пушистый кот пушистый хвост"s, DocumentStatus::ACTUAL, { 7, 2, 7 });
+        search_server.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, { 5, -12, 2, 1 });
+        search_server.AddDocument(3, "ухоженный скворец евгений"s, DocumentStatus::BANNED, { 9 });
+        auto docs = search_server.FindTopDocuments("пушистый ухоженный кот"s);
+        ASSERT(docs[0].relevance >= docs[1].relevance && docs[1].relevance >= docs[2].relevance);
+    }
 }
-
+void TestRating() {
+    {
+        SearchServer search_server;
+        search_server.SetStopWords("и в на"s);
+        search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, { 8, -3 });
+        auto docs = search_server.FindTopDocuments("пушистый ухоженный кот"s);
+        ASSERT_EQUAL(docs[0].rating,2 );
+    }
+    {
+        SearchServer search_server;
+        search_server.SetStopWords("и в на"s);
+        search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, { -8, -3 });
+        auto docs = search_server.FindTopDocuments("пушистый ухоженный кот"s);
+        ASSERT_EQUAL(docs[0].rating, -5);
+    }
+    {
+        SearchServer search_server;
+        search_server.SetStopWords("и в на"s);
+        search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, { 8, 3 });
+        auto docs = search_server.FindTopDocuments("пушистый ухоженный кот"s);
+        ASSERT_EQUAL(docs[0].rating, 5);
+    }
+    {
+        SearchServer search_server;
+        search_server.SetStopWords("и в на"s);
+        search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, { 0, 0 });
+        auto docs = search_server.FindTopDocuments("пушистый ухоженный кот"s);
+        ASSERT_EQUAL(docs[0].rating, 0);
+    }
+    {
+        SearchServer search_server;
+        search_server.SetStopWords("и в на"s);
+        search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, { 3, -3 });
+        auto docs = search_server.FindTopDocuments("пушистый ухоженный кот"s);
+        ASSERT_EQUAL(docs[0].rating, 0);
+    }
+}
+void TestSearch() {
+    {
+        SearchServer search_server;
+        search_server.SetStopWords("и в на"s);
+        search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, { 3, -3 });
+        search_server.AddDocument(1, "пушистый кот пушистый хвост"s, DocumentStatus::ACTUAL, { 7, 2, 7 });
+        search_server.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, { 5, -12, 2, 1 });
+        search_server.AddDocument(3, "ухоженный скворец евгений"s, DocumentStatus::BANNED, { 0 });
+        auto docs = search_server.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) 
+            { return rating == 0; });        
+        ASSERT(docs.size() == 2);
+    }
+    {
+        SearchServer search_server;
+        search_server.SetStopWords("и в на"s);
+        search_server.AddDocument(0, "белый кот и модный ошейник"s, DocumentStatus::ACTUAL, { 3, -3 });
+        search_server.AddDocument(1, "пушистый кот пушистый хвост"s, DocumentStatus::ACTUAL, { 7, 2, 7 });
+        search_server.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, { 5, -12, 2, 1 });
+        search_server.AddDocument(3, "ухоженный скворец евгений"s, DocumentStatus::BANNED, { 0 });
+        auto docs = search_server.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) { return document_id == 0; });
+        ASSERT(docs.size() == 1);
+    }
+}
 
 // Функция TestSearchServer является точкой входа для запуска тестов
 void TestSearchServer() {
@@ -450,6 +535,8 @@ void TestSearchServer() {
     RUN_TEST(TestStatus);
     RUN_TEST(TestRelevance);
     RUN_TEST(TestSort);
+    RUN_TEST(TestRating);
+    RUN_TEST(TestSearch);
     // Не забудьте вызывать остальные тесты здесь
 }
 
