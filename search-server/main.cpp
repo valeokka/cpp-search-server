@@ -1,4 +1,4 @@
-    #include <algorithm>
+#include <algorithm>
     #include <cmath>
     #include <iostream>
     #include <map>
@@ -16,16 +16,7 @@
         getline(cin, s);
         return s;
     }
-    bool Check_Query(const string& query){
-            for (int i = 0; i < query.size(); ++i){
-                if (query[i] == '-'){
-                    if(query[i+1] == '-' || query[i+1] == ' ' || query[query.size()-1] == '-'){
-                        return false;
-                    }
-                }
-            }
-        return true;
-        }
+
     int ReadLineWithNumber() {
         int result;
         cin >> result;
@@ -98,15 +89,12 @@
 
         explicit SearchServer(const string& stop_words_text)
             : SearchServer(
-                SplitIntoWords(stop_words_text))  // Invoke delegating constructor from string container
-        {
-            if (!IsValidWord(stop_words_text))
-            throw invalid_argument("invalid stop words");
-        }
+                SplitIntoWords(stop_words_text))  // Invoke delegating constructor from  string container
+            {}
 
          void AddDocument(int document_id, const string& document, DocumentStatus status, const vector<int>& ratings) {
             if (document_id >= 0 && documents_.count(document_id) == 0 && IsValidWord(document) ){
-            count_id.push_back(document_id);
+            count_id_.push_back(document_id);
             const vector<string> words = SplitIntoWordsNoStop(document);
             const double inv_word_count = 1.0 / words.size();
             for (const string& word : words) {
@@ -121,9 +109,6 @@
 
         template <typename DocumentPredicate>
         vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
-           if (!Check_Query(raw_query) || !IsValidWord(raw_query)){
-                throw invalid_argument("invalid query");
-            }
             const Query query = ParseQuery(raw_query);
             auto matched_documents = FindAllDocuments(query, document_predicate);
 
@@ -157,9 +142,7 @@
         }
 
         tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
-            if (!Check_Query(raw_query) || !IsValidWord(raw_query)){
-                throw invalid_argument("fail to match document");
-            }
+
             const Query query = ParseQuery(raw_query);
             vector<string> matched_words;
             for (const string& word : query.plus_words) {
@@ -184,10 +167,10 @@
         
 
         int GetDocumentId(int index) const {
-            return count_id.at(index);
+            return count_id_.at(index);
         }
     private:
-        vector <int> count_id;
+        vector <int> count_id_;
 
         struct DocumentData {
             int rating;
@@ -235,10 +218,14 @@
             bool is_stop;
         };
 
+
         QueryWord ParseQueryWord(string text) const {
             bool is_minus = false;
             // Word shouldn't be empty
             if (text[0] == '-') {
+                if (text[1] == '-' || text.size() == 2 ){
+                    throw invalid_argument("Invalid argument");
+                }
                 is_minus = true;
                 text = text.substr(1);
             }
@@ -305,5 +292,3 @@
         }
        
     };
-
- 
