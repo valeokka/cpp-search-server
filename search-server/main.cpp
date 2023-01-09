@@ -223,7 +223,10 @@
             bool is_minus = false;
             // Word shouldn't be empty
             if (text[0] == '-') {
-                if (text[1] == '-' || text.size() == 2 ){
+                if (text.size() == 1){
+                    throw invalid_argument("Invalid argument");
+                }    
+                if (text[1] == '-'){
                     throw invalid_argument("Invalid argument");
                 }
                 is_minus = true;
