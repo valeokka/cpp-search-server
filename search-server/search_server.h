@@ -27,7 +27,17 @@ public:
         : SearchServer(
               SplitIntoWords(stop_words_text)) // Invoke delegating constructor from string container
     {}
-    
+
+        template <typename StringContainer>
+    explicit SearchServer(const StringContainer &stop_words)
+        : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) // Extract non-empty stop words
+    {
+        if (!std::all_of(stop_words_.begin(), stop_words_.end(), IsValidWord))
+        {
+            throw std::invalid_argument("Some of stop words are invalid");
+        }
+    }
+
     void AddDocument(int document_id, const std::string &document, DocumentStatus status,
                      const std::vector<int> &ratings);
 
@@ -37,61 +47,17 @@ public:
 
     int GetDocumentCount() const;
 
-    int GetDocumentId(int index) const;
+    const std::map<std::string, double> &GetWordFrequencies(int document_id) const;
+
+    std::vector<int>::const_iterator begin() const;
+    std::vector<int>::const_iterator end() const;
+    std::vector<int>::iterator begin();
+    std::vector<int>::iterator end();
+
+    void RemoveDocument(int document_id);
 
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string &raw_query,
                                                                        int document_id) const;
-private:
-    struct DocumentData
-    {
-        int rating;
-        DocumentStatus status;
-    };
-
-    struct Query
-    {
-        std::set<std::string> plus_words;
-        std::set<std::string> minus_words;
-    };
-
-    struct QueryWord
-    {
-        std::string data;
-        bool is_minus;
-        bool is_stop;
-    };
-    const std::set<std::string> stop_words_;
-
-    std::map<std::string, std::map<int, double>> word_to_document_freqs_;
-
-    std::map<int, DocumentData> documents_;
-
-    std::vector<int> document_ids_;
-
-    bool IsStopWord(const std::string &word) const;
-
-    static bool IsValidWord(const std::string &word);
-
-    std::vector<std::string> SplitIntoWordsNoStop(const std::string &text) const;
-
-    static int ComputeAverageRating(const std::vector<int> &ratings);
-
-    QueryWord ParseQueryWord(const std::string &text) const;
-
-    Query ParseQuery(const std::string &text) const;
-
-    // Existence required
-    double ComputeWordInverseDocumentFreq(const std::string &word) const;
-
-    template <typename StringContainer>
-    explicit SearchServer(const StringContainer &stop_words)
-        : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) // Extract non-empty stop words
-    {
-        if (!std::all_of(stop_words_.begin(), stop_words_.end(), IsValidWord))
-        {
-            throw std::invalid_argument("Some of stop words are invalid");
-        }
-    }
 
     template <typename DocumentPredicate>
     std::vector<Document> FindTopDocuments(const std::string &raw_query,
@@ -120,6 +86,51 @@ private:
 
         return matched_documents;
     }
+
+private:
+    struct DocumentData
+    {
+        int rating;
+        DocumentStatus status;
+    };
+
+    struct Query
+    {
+        std::set<std::string> plus_words;
+        std::set<std::string> minus_words;
+    };
+
+    struct QueryWord
+    {
+        std::string data;
+        bool is_minus;
+        bool is_stop;
+    };
+    const std::set<std::string> stop_words_;
+
+    std::map<std::string, std::map<int, double>> word_to_document_freqs_;
+
+    std::map<int, std::map<std::string, double>> document_words;
+
+    std::map<int, DocumentData> documents_;
+
+    std::vector<int> document_ids_;
+    
+    bool IsStopWord(const std::string &word) const;
+
+    static bool IsValidWord(const std::string &word);
+
+    std::vector<std::string> SplitIntoWordsNoStop(const std::string &text) const;
+
+    static int ComputeAverageRating(const std::vector<int> &ratings);
+
+    QueryWord ParseQueryWord(const std::string &text) const;
+
+    Query ParseQuery(const std::string &text) const;
+
+    // Existence required
+    double ComputeWordInverseDocumentFreq(const std::string &word) const;
+
     template <typename DocumentPredicate>
     std::vector<Document> FindAllDocuments(const Query &query,
                                            DocumentPredicate document_predicate) const
