@@ -5,35 +5,33 @@
 
 void RemoveDuplicates(SearchServer &search_server)
 {
-    std::map<int, std::set<std::string>> documents;
+    std::map<std::set<std::string>, std::set<int>> documents;
     for (const int document_id : search_server)
     {
+        //В SearchServer существует map со словами и их частотой. Достаем из map только слова и добавляем во множество 
+        std::set <std::string> words_id;
         auto id_words = search_server.GetWordFrequencies(document_id);
         for (auto it = id_words.begin();
+        
              it != id_words.end(); ++it)
         {
-            documents[document_id].insert(it->first);
+            words_id.insert(it->first);
         }
+        documents[words_id].insert(document_id);
     }
-    for (int i = 0; i < documents.size();++i){
-        for(std::string str : documents[i] ){
-        }
-    }
+
     std::set <int> for_delete;
-    for (const int id0 : search_server)
+    for (auto it = documents.begin(); it != documents.end(); ++it)
     {
-         if(for_delete.count(id0) != 0){
-            continue;
-         }
-        for (const int id1 : search_server)
-        {
-            if(for_delete.count(id1) != 0 || id1 == id0){
-                continue;
-            }
-            if (documents[id0] == documents[id1]){
-                for_delete.insert(id1);
+        if (it->second.size() > 1){
+            for (auto it1 = it->second.begin(); it1 != it->second.end(); ++it1){
+                if (it1 == it->second.begin()){
+                    continue;
+                }
+                for_delete.insert(*it1);
             }
         }
+        
     }
     for (const int id : for_delete){
         std::cout << "Found duplicate document id " << id << "\n";

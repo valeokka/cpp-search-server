@@ -8,7 +8,7 @@
 #include <algorithm>
 #include "document.h"
 #include "string_processing.h"
-constexpr double MAGICNUM = 1e-6;
+constexpr double ACCURACY = 1e-6;
 enum class DocumentStatus
 {
     ACTUAL,
@@ -70,7 +70,7 @@ public:
         sort(matched_documents.begin(), matched_documents.end(),
              [](const Document &lhs, const Document &rhs)
              {
-                 if (std::abs(lhs.relevance - rhs.relevance) < MAGICNUM)
+                 if (std::abs(lhs.relevance - rhs.relevance) < ACCURACY)
                  {
                      return lhs.rating > rhs.rating;
                  }
