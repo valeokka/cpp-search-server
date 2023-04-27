@@ -203,16 +203,21 @@ int SearchServer::ComputeAverageRating(const std::vector<int> &ratings){
 SearchServer::Query SearchServer::ParseQuery(const std::string_view &text) const{
     Query result;
         auto words = SplitIntoWords(text);
-    std::sort(words.begin(),words.end());
-    words.erase(std::unique(words.begin(),words.end()),words.end());
+        result.minus_words.reserve(words.size());
+        result.plus_words.reserve(words.size());
+        std::sort(words.begin(),words.end());
+        words.erase(std::unique(words.begin(),words.end()),words.end());
 
     std::for_each(words.begin(),words.end(),[this, &result](const std::string_view& word){
         const auto query_word = ParseQueryWord(word);
+        
         if (!query_word.is_stop){
             query_word.is_minus ?   result.minus_words.push_back(query_word.data) : 
                                     result.plus_words.push_back(query_word.data);
         }
     });
+    result.minus_words.shrink_to_fit();
+    result.plus_words.shrink_to_fit();
     return result;
 }
 
@@ -230,6 +235,8 @@ SearchServer::Query SearchServer::ParseQuery(const std::execution::parallel_poli
                                     result.plus_words.push_back(query_word.data);
         }
     });
+    result.minus_words.shrink_to_fit();
+    result.plus_words.shrink_to_fit();
     return result;
 }
 
