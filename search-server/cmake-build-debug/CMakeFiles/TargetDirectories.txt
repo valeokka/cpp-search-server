@@ -1,0 +1,3 @@
+C:/VScode-projects/search-server/cmake-build-debug/CMakeFiles/search_server.dir
+C:/VScode-projects/search-server/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/VScode-projects/search-server/cmake-build-debug/CMakeFiles/rebuild_cache.dir
