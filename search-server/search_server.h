@@ -93,7 +93,7 @@ public:
                                         DocumentPredicate document_predicate) const{
         const auto query = ParseQuery(policy,raw_query);
         auto matched_documents = FindAllDocuments(policy, query, document_predicate);
-        sort(matched_documents.begin(), matched_documents.end(), [](const Document &lhs, const Document &rhs){
+        sort(policy, matched_documents.begin(), matched_documents.end(), [](const Document &lhs, const Document &rhs){
                  if (std::abs(lhs.relevance - rhs.relevance) < ACCURACY){
                      return lhs.rating > rhs.rating;
                  }else{

@@ -88,16 +88,15 @@ void SearchServer::RemoveDocument(const std::execution::parallel_policy&, int do
     document_ids_.erase(it);
     }
     documents_.erase(document_id);
-    std::for_each(std::execution::par,document_words[document_id].begin(), document_words[document_id].end(),
-                                                                                            [&](auto items){
+    std::for_each(std::execution::par,document_words[document_id].begin(), 
+                     document_words[document_id].end(), [&](auto& items){
        word_to_document_freqs_[items.first].erase(document_id);
     });
-
+//
     document_words.erase(document_id);
 }
-using MatchedDoc = std::tuple<std::vector<std::string_view>, DocumentStatus>;
 
-MatchedDoc SearchServer::MatchDocument(std::string_view raw_query, int document_id) const{
+SearchServer::MatchedDoc SearchServer::MatchDocument(std::string_view raw_query, int document_id) const{
     const auto query = ParseQuery(std::execution::seq,raw_query);
     
     std::vector<std::string_view> matched_words;
@@ -116,12 +115,12 @@ MatchedDoc SearchServer::MatchDocument(std::string_view raw_query, int document_
     return {matched_words, documents_.at(document_id).status};
 }
 
-MatchedDoc SearchServer::MatchDocument(const std::execution::sequenced_policy&,std::string_view raw_query, 
+SearchServer::MatchedDoc SearchServer::MatchDocument(const std::execution::sequenced_policy&,std::string_view raw_query, 
                                                                                     int document_id) const{
    return MatchDocument(raw_query, document_id);
 }
 
-MatchedDoc SearchServer::MatchDocument(const std::execution::parallel_policy&,std::string_view raw_query, 
+SearchServer::MatchedDoc SearchServer::MatchDocument(const std::execution::parallel_policy&,std::string_view raw_query, 
                                                                                 int document_id) const{
     const auto query = ParseQuery(std::execution::par,raw_query);
 
